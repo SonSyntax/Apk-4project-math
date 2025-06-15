@@ -1,14 +1,35 @@
-
 from pulp import LpMaximize, LpProblem, LpVariable
 
-def solve_lp():
-    model = LpProblem("Optimasi Produksi", LpMaximize)
-    x = LpVariable("Produk_A", lowBound=0)
-    y = LpVariable("Produk_B", lowBound=0)
+def solve_lp(obj_func: str, constraints: list):
+    model = LpProblem("Linear Programming", LpMaximize)
 
-    model += 20 * x + 30 * y
-    model += 2 * x + y <= 100
-    model += x + 3 * y <= 90
+    x = LpVariable("x", lowBound=0)
+    y = LpVariable("y", lowBound=0)
+    variables = {"x": x, "y": y}
 
-    model.solve()
-    return x.varValue, y.varValue, model.objective.value()
+    try:
+        # Fungsi objektif
+        model += eval(obj_func, {}, variables)
+
+        # Tambahkan kendala
+        for constraint in constraints:
+            if "<=" in constraint:
+                left, right = constraint.split("<=")
+                model += eval(left.strip(), {}, variables) <= float(right)
+            elif ">=" in constraint:
+                left, right = constraint.split(">=")
+                model += eval(left.strip(), {}, variables) >= float(right)
+            elif "=" in constraint or "==" in constraint:
+                left, right = constraint.replace("=", "==").split("==")
+                model += eval(left.strip(), {}, variables) == float(right)
+
+        model.solve()
+
+        return {
+            "x": x.varValue,
+            "y": y.varValue,
+            "obj": model.objective.value()
+        }
+
+    except Exception as e:
+        return {"error": str(e)}
